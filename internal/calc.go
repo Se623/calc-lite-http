@@ -1,10 +1,7 @@
-package main
+package calc
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"net/http"
 	"strconv"
 )
 
@@ -133,39 +130,4 @@ func Calc(expression string) (float64, error) {
 		return 0, err
 	}
 	return res, nil
-}
-
-type Exp struct {
-	Expression string `json:"expression"`
-}
-
-var answer float64
-
-func Receiver(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			decoder := json.NewDecoder(r.Body)
-			var resp Exp
-			err := decoder.Decode(&resp)
-			if err != nil {
-				http.Error(w, `{"error": "Internal server error"}`, http.StatusUnprocessableEntity)
-				return
-			}
-			answer, err = Calc(resp.Expression)
-			if err != nil {
-				http.Error(w, `{"error": "Expression is not valid"}`, http.StatusInternalServerError)
-				return
-			}
-			next.ServeHTTP(w, r)
-		}()
-	})
-}
-
-func answerHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, `{"result": "%g"}`, answer)
-}
-
-func main() {
-	http.HandleFunc("/api/v1/calculate", Receiver(answerHandler))
-	http.ListenAndServe(":8080", nil)
 }
